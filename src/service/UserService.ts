@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { getRepository } from "typeorm";
 import { User } from "../entity/User";
+import * as bcrypt from 'bcrypt'
 
 import '../connection/connection'
 
@@ -25,6 +26,10 @@ export class UserService {
 
         if (validation[0] == null) {
 
+            const passwordHash = await bcrypt.hash(user.password, 8)
+
+            user.password = passwordHash
+
             const results = await userRepository.save(user)
 
             response.status(201).json(results)
@@ -46,7 +51,9 @@ export class UserService {
             const { name, email, password } = request.body
             const id_user = request.params.id_user
 
-            await userRepository.update(id_user, { name: name, email: email, password: password })
+            const passwordHash = await bcrypt.hash(password, 8)
+
+            await userRepository.update(id_user, { name: name, email: email, password: passwordHash })
 
             response.status(204).end()
         
