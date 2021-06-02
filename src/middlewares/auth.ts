@@ -5,7 +5,7 @@ export const auth = async (request: Request, response: Response, next: NextFunct
 
     const authHeader = request.headers.authorization
 
-    if (!authHeader) response.status(401).json({message: 'É necessário o Token.'})
+    if (!authHeader) return response.status(401).json({message: 'É necessário o Token.'})
 
     const [ ,token] = authHeader.split(' ')
 
@@ -16,6 +16,6 @@ export const auth = async (request: Request, response: Response, next: NextFunct
         
     } catch (error) {
         
-        response.status(401).json({message: 'Token inválido'})
+        return response.status(401).json({message: 'Token inválido'})
     }
 }

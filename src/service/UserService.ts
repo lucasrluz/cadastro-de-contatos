@@ -18,7 +18,7 @@ export class UserService {
 
         if (validation[0] == null) {
 
-            response.status(404).json({message: 'Este usuário não existe.'})
+            return response.status(404).json({message: 'Este usuário não existe.'})
             
         } else {
 
@@ -33,10 +33,11 @@ export class UserService {
                     token
                 }
 
-                response.status(200).json(data)
+                return response.status(200).json(data)
+
             } else {
                 
-                response.status(404).json({message: 'Este usuário não existe.'})
+                return response.status(404).json({message: 'Este usuário não existe.'})
             }
         } 
     }
@@ -47,7 +48,7 @@ export class UserService {
 
         const results = await userRepository.find()
 
-        response.status(200).json(results)
+        return response.status(200).json(results)
     }
 
     async saveUser(request: Request, response: Response) {
@@ -66,11 +67,11 @@ export class UserService {
 
             const results = await userRepository.save(user)
 
-            response.status(201).json(results)
+            return response.status(201).json(results)
         
         } else {
 
-            response.status(500).json({message: 'Este e-mail já está cadastrado.'})
+            return response.status(500).json({message: 'Este e-mail já está cadastrado.'})
         }        
     }
 
@@ -89,11 +90,11 @@ export class UserService {
 
             await userRepository.update(id_user, { name: name, email: email, password: passwordHash })
 
-            response.status(204).end()
+            return response.status(204).end()
         
         } else {
 
-            response.status(500).json({message: 'Este e-mail já está cadastrado.'})
+            return response.status(500).json({message: 'Este e-mail já está cadastrado.'})
         }    
     }
 
@@ -107,13 +108,13 @@ export class UserService {
 
         if (validation[0] == null) {
 
-            response.status(500).json({message: 'Este usuário não existe.'})
+            return response.status(500).json({message: 'Este usuário não existe.'})
             
         } else {
 
             await userRepository.delete(id_user)
 
-            response.status(204).end()
+            return response.status(204).end()
         }
     }
 }
