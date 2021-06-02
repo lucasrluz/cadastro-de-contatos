@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { getRepository } from "typeorm";
+import { getRepository, Not } from "typeorm";
 import { User } from "../entity/User";
 import * as bcrypt from 'bcrypt'
 import * as jwt from 'jsonwebtoken'
@@ -79,7 +79,7 @@ export class UserService {
 
         const userRepository = getRepository(User)
 
-        const validation = await userRepository.find({ where: { email: request.body.email}})
+        const validation = await userRepository.find({ where: { email: request.body.email, id: Not(request.params.id_user)}})
 
         if (validation[0] == null) {
 
