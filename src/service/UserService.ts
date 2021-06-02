@@ -2,10 +2,44 @@ import { Request, Response } from "express";
 import { getRepository } from "typeorm";
 import { User } from "../entity/User";
 import * as bcrypt from 'bcrypt'
+import * as jwt from 'jsonwebtoken'
 
 import '../connection/connection'
 
 export class UserService {
+
+    async login(request: Request, response: Response) {
+
+        const userRepository = getRepository(User)
+
+        const {email, password} = request.body
+
+        const validation = await userRepository.find({ where: { email: email}})
+
+        if (validation[0] == null) {
+
+            response.status(404).json({message: 'Este usuário não existe.'})
+            
+        } else {
+
+            if (await bcrypt.compare(password, validation[0].password)) {
+
+                const token = jwt.sign({id: validation[0].id}, process.env.APP_SECRET, {expiresIn: '1d'})
+
+                const data = {
+                    id: validation[0].id,
+                    name: validation[0].name,
+                    email: validation[0].email,
+                    token
+                }
+
+                response.status(200).json(data)
+            } else {
+                
+                response.status(404).json({message: 'Este usuário não existe.'})
+            }
+        } 
+    }
 
     async viewUser(request: Request, response: Response) {
 
