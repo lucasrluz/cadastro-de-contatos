@@ -1,8 +1,9 @@
 import { Request, Response } from "express";
-import { getRepository, Not } from "typeorm";
+import { getCustomRepository, getRepository, Not } from "typeorm";
 import { User } from "../entity/User";
 import * as bcrypt from 'bcrypt'
 import * as jwt from 'jsonwebtoken'
+import { UserRepository } from '../repository/UserRepository'
 
 import '../connection/connection'
 
@@ -44,11 +45,20 @@ export class UserService {
 
     async viewUser(request: Request, response: Response) {
 
-        const userRepository = getRepository(User)
+        const userRepository = getCustomRepository(UserRepository)
 
-        const results = await userRepository.find()
+        const {email, password} = request.body
 
-        return response.status(200).json(results)
+        const validation = await userRepository.findByEmailAndPassword(email, password)
+
+        if (validation == false) {
+
+            response.status(404).json({message: 'Este usuário não existe.'}) 
+
+        } else {
+
+            response.status(200).json(validation)
+        }
     }
 
     async saveUser(request: Request, response: Response) {
