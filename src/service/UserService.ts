@@ -1,64 +1,28 @@
 import { Request, Response } from "express";
-import { getCustomRepository, getRepository, Not } from "typeorm";
+import { getRepository } from "typeorm";
 import { User } from "../entity/User";
 import * as bcrypt from 'bcrypt'
-import * as jwt from 'jsonwebtoken'
-import { UserRepository } from '../repository/UserRepository'
-
+import { basicAuth } from '../middlewares/basicAuth'
 import '../connection/connection'
+import { Contact } from "../entity/Contact";
 
 export class UserService {
 
-    async login(request: Request, response: Response) {
-
-        const userRepository = getRepository(User)
-
-        const {email, password} = request.body
-
-        const validation = await userRepository.find({ where: { email: email}})
-
-        if (validation[0] == null) {
-
-            return response.status(404).json({message: 'Este usuário não existe.'})
-            
-        } else {
-
-            if (await bcrypt.compare(password, validation[0].password)) {
-
-                const token = jwt.sign({id: validation[0].id}, process.env.APP_SECRET, {expiresIn: '1d'})
-
-                const data = {
-                    id: validation[0].id,
-                    name: validation[0].name,
-                    email: validation[0].email,
-                    token
-                }
-
-                return response.status(200).json(data)
-
-            } else {
-                
-                return response.status(404).json({message: 'Este usuário não existe.'})
-            }
-        } 
-    }
-
     async viewUser(request: Request, response: Response) {
 
-        const userRepository = getCustomRepository(UserRepository)
+        const validation = await basicAuth(request, response)
 
-        const {email, password} = request.body
+        if (validation == 'É necessário o Header de Autenticação.') {
 
-        const validation = await userRepository.findByEmailAndPassword(email, password)
-
-        if (validation == false) {
-
-            response.status(404).json({message: 'Este usuário não existe.'}) 
-
-        } else {
-
-            response.status(200).json(validation)
+            return response.status(401).json({ message: validation })
         }
+
+        if (validation == 'Este usuário não existe.') {
+
+            return response.status(404).json({ message: validation })
+        }
+
+        return response.status(200).json(validation)
     }
 
     async saveUser(request: Request, response: Response) {
@@ -89,42 +53,51 @@ export class UserService {
 
         const userRepository = getRepository(User)
 
-        const validation = await userRepository.find({ where: { email: request.body.email, id: Not(request.params.id_user)}})
+        const validation = await basicAuth(request, response) 
 
-        if (validation[0] == null) {
+        if (validation == 'É necessário o Header de Autenticação.') {
 
-            const { name, email, password } = request.body
-            const id_user = request.params.id_user
+            return response.status(401).json({ message: validation })
+        }
 
-            const passwordHash = await bcrypt.hash(password, 8)
+        if (validation == 'Este usuário não existe.') {
 
-            await userRepository.update(id_user, { name: name, email: email, password: passwordHash })
+            return response.status(404).json({ message: validation })
+        }
 
-            return response.status(204).end()
-        
-        } else {
+        const id_user = request.params.id_user
+        const { name, password } = request.body
 
-            return response.status(500).json({message: 'Este e-mail já está cadastrado.'})
-        }    
+        const passwordHash = await bcrypt.hash(password, 8)
+
+        await userRepository.update(id_user, { name: name, password: passwordHash })
+
+        return response.status(204).end()
     }
 
     async deleteUser(request: Request, response: Response) {
 
         const userRepository = getRepository(User)
+        const contactRepository = getRepository(Contact)
 
         const id_user = request.params.id_user
 
-        const validation = await userRepository.find({ where: { id: id_user} })
+        const validation = await basicAuth(request, response)
 
-        if (validation[0] == null) {
+        if (validation == 'É necessário o Header de Autenticação.') {
 
-            return response.status(500).json({message: 'Este usuário não existe.'})
-            
-        } else {
-
-            await userRepository.delete(id_user)
-
-            return response.status(204).end()
+            return response.status(401).json({ message: validation })
         }
+
+        if (validation == 'Este usuário não existe.') {
+
+            return response.status(404).json({ message: validation })
+        }
+
+        await contactRepository.delete({user: validation})
+
+        await userRepository.delete(id_user)
+
+        return response.status(204).end()
     }
 }
