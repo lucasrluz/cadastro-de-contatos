@@ -10,19 +10,19 @@ export class UserService {
 
     async viewUser(request: Request, response: Response) {
 
-        const validation = await basicAuth(request, response)
+        const userValidation = await basicAuth(request)
 
-        if (validation == 'É necessário o Header de Autenticação.') {
+        if (userValidation.code == 'É necessário o Header de Autenticação.') {
 
-            return response.status(401).json({ message: validation })
+            return response.status(401).json({ message: userValidation.code })
         }
 
-        if (validation == 'Este usuário não existe.') {
+        if (userValidation.code == 'E-mail e/ou senha incorretos.') {
 
-            return response.status(404).json({ message: validation })
+            return response.status(401).json({ message: userValidation.code })
         }
 
-        return response.status(200).json(validation)
+        return response.status(200).json(userValidation.value)
     }
 
     async saveUser(request: Request, response: Response) {
@@ -31,9 +31,9 @@ export class UserService {
 
         const user: User = request.body 
 
-        const validation = await userRepository.find({ where: { email: user.email}})
+        const userValidation = await userRepository.findOne({ where: { email: user.email}})
 
-        if (validation[0] == null) {
+        if (userValidation == null) {
 
             const passwordHash = await bcrypt.hash(user.password, 8)
 
@@ -43,34 +43,32 @@ export class UserService {
 
             return response.status(201).json(results)
         
-        } else {
+        }
 
-            return response.status(500).json({message: 'Este e-mail já está cadastrado.'})
-        }        
+        return response.status(500).json({message: 'Este e-mail já está cadastrado.'})       
     }
 
     async editUser(request: Request, response: Response) {
 
         const userRepository = getRepository(User)
 
-        const validation = await basicAuth(request, response) 
+        const userValidation = await basicAuth(request) 
 
-        if (validation == 'É necessário o Header de Autenticação.') {
+        if (userValidation.code == 'É necessário o Header de Autenticação.') {
 
-            return response.status(401).json({ message: validation })
+            return response.status(401).json({ message: userValidation.code })
         }
 
-        if (validation == 'Este usuário não existe.') {
+        if (userValidation.code == 'E-mail e/ou senha incorretos.') {
 
-            return response.status(404).json({ message: validation })
+            return response.status(401).json({ message: userValidation.code })
         }
 
-        const id_user = request.params.id_user
         const { name, password } = request.body
 
         const passwordHash = await bcrypt.hash(password, 8)
 
-        await userRepository.update(id_user, { name: name, password: passwordHash })
+        await userRepository.update(userValidation.value.id, { name: name, password: passwordHash })
 
         return response.status(204).end()
     }
@@ -80,24 +78,22 @@ export class UserService {
         const userRepository = getRepository(User)
         const contactRepository = getRepository(Contact)
 
-        const id_user = request.params.id_user
+        const userValidation = await basicAuth(request)
 
-        const validation = await basicAuth(request, response)
+        if (userValidation.code == 'É necessário o Header de Autenticação.') {
 
-        if (validation == 'É necessário o Header de Autenticação.') {
-
-            return response.status(401).json({ message: validation })
+            return response.status(401).json({ message: userValidation.code })
         }
 
-        if (validation == 'Este usuário não existe.') {
+        if (userValidation.code == 'E-mail e/ou senha incorretos.') {
 
-            return response.status(404).json({ message: validation })
+            return response.status(404).json({ message: userValidation.code })
         }
 
-        await contactRepository.delete({user: validation})
+        await contactRepository.delete({user: userValidation.value})
 
-        await userRepository.delete(id_user)
+        await userRepository.delete({id: userValidation.value.id})
 
-        return response.status(204).end()
+        return response.status(204).end() 
     }
 }
