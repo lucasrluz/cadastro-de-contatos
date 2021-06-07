@@ -7,5 +7,5 @@ const contactService = new ContactService()
 
 contactRoute.get('/contacts', contactService.viewContact)
 contactRoute.post('/contacts', contactService.saveContact)
-contactRoute.put('/contacts', contactService.editContact)
-contactRoute.delete('/contacts', contactService.deleteContact)
+contactRoute.put('/contacts/:id_contact', contactService.editContact)
+contactRoute.delete('/contacts/:id_contact', contactService.deleteContact)
