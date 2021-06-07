@@ -1,9 +1,7 @@
 import { Request, Response } from "express";
-import { getCustomRepository, getRepository, Not } from "typeorm";
+import { getRepository, Not } from "typeorm";
 import { Contact } from "../entity/Contact";
-import { User } from "../entity/User";
 import { basicAuth } from "../middlewares/basicAuth";
-import { UserRepository } from "../repository/UserRepository";
 
 export class ContactService {
 
@@ -11,19 +9,19 @@ export class ContactService {
 
         const contactRepository = getRepository(Contact)
 
-        const validation = await basicAuth(request, response)
+        const userValidation = await basicAuth(request)
 
-        if (validation == 'É necessário o Header de Autenticação.') {
+        if (userValidation.code == 'É necessário o Header de Autenticação.') {
 
-            return response.status(401).json({ message: validation })
+            return response.status(401).json({ message: userValidation.code })
         }
 
-        if (validation == 'Este usuário não existe.') {
+        if (userValidation.code == 'E-mail e/ou senha incorretos.') {
 
-            return response.status(404).json({ message: validation })
+            return response.status(401).json({ message: userValidation.code })
         }
 
-        const contacts = await contactRepository.find({ where: { user: validation }})
+        const contacts = await contactRepository.find({ where: { user: userValidation.value }})
         
         return response.status(200).json(contacts)   
     }
@@ -32,30 +30,29 @@ export class ContactService {
         
         const contactRepository = getRepository(Contact)
 
-        const userValidation = await basicAuth(request, response)
+        const userValidation = await basicAuth(request)
 
-        if (userValidation == 'É necessário o Header de Autenticação.') {
+        if (userValidation.code == 'É necessário o Header de Autenticação.') {
 
-            return response.status(401).json({ message: userValidation })
+            return response.status(401).json({ message: userValidation.code })
         }
 
-        if (userValidation == 'Este usuário não existe.') {
+        if (userValidation.code == 'E-mail e/ou senha incorretos.') {
 
-            return response.status(404).json({ message: userValidation })
+            return response.status(401).json({ message: userValidation.code })
         }
 
         const contact: Contact = request.body
 
-        const contactValidation = await contactRepository.findOne({ where: { number: contact.number, user: userValidation }})
+        const contactValidation = await contactRepository.findOne({ where: { number: contact.number, user: userValidation.value }})
 
         if (contactValidation == null) {
 
-            contact.user = userValidation
+            contact.user = userValidation.value
 
             const result = await contactRepository.save(contact)
 
             return response.status(201).json(result)
-        
         } 
         
         return response.status(500).json({message: 'Este contato já existe.'})
@@ -65,29 +62,28 @@ export class ContactService {
         
         const contactRepository = getRepository(Contact)
 
-        const userValidation = await basicAuth(request, response)
+        const userValidation = await basicAuth(request)
 
-        if (userValidation == 'É necessário o Header de Autenticação.') {
+        if (userValidation.code == 'É necessário o Header de Autenticação.') {
 
-            return response.status(401).json({ message: userValidation })
+            return response.status(401).json({ message: userValidation.code })
         }
 
-        if (userValidation == 'Este usuário não existe.') {
+        if (userValidation.code == 'E-mail e/ou senha incorretos.') {
 
-            return response.status(404).json({ message: userValidation })
+            return response.status(401).json({ message: userValidation.code })
         }
 
         const { firstName, lastName, number } = request.body
         const id_contact = request.params.id_contact
 
-        const contactValidation = await contactRepository.findOne({ where: { number: number, user: userValidation, id: Not(id_contact) }})
+        const contactValidation = await contactRepository.findOne({ where: { number: number, user: userValidation.value, id: Not(id_contact) }})
 
         if (contactValidation == null) {
 
-            const result = contactRepository.update(id_contact, { firstName: firstName, lastName: lastName, number: number })
+            await contactRepository.update(id_contact, { firstName: firstName, lastName: lastName, number: number })
 
-            return response.status(201).json(result)
-        
+            return response.status(204).end()
         } 
 
         return response.status(500).json({ message: 'Este contato já existe.' })
@@ -97,29 +93,29 @@ export class ContactService {
 
         const contactRepository = getRepository(Contact)
 
-        const userValidation = await basicAuth(request, response)
+        const userValidation = await basicAuth(request)
         
-        if (userValidation == 'É necessário o Header de Autenticação.') {
+        if (userValidation.code == 'É necessário o Header de Autenticação.') {
 
-            return response.status(401).json({ message: userValidation })
+            return response.status(401).json({ message: userValidation.code })
         }
 
-        if (userValidation == 'Este usuário não existe.') {
+        if (userValidation.code == 'E-mail e/ou senha incorretos.') {
 
-            return response.status(404).json({ message: userValidation })
+            return response.status(401).json({ message: userValidation.code })
         }
 
         const id_contact = request.params.id_contact
         
-        const contactValidation = await contactRepository.findOne({ where: { id: id_contact, user: userValidation }})
+        const contactValidation = await contactRepository.findOne({ where: { id: id_contact, user: userValidation.value }})
 
         if (contactValidation == null) {
 
             return response.status(404).json({ message: 'Este contato não existe.' })
         } 
 
-        const result = await contactRepository.delete(id_contact)
+        await contactRepository.delete(id_contact)
 
-        return response.status(204).json(result)
+        return response.status(204).end()
     }
 }
