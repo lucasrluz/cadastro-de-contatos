@@ -1,14 +1,22 @@
 import { Request, Response } from "express"
 import { getCustomRepository } from "typeorm"
+import { User } from "../entity/User"
 import { UserRepository } from "../repository/UserRepository"
 
-export async function basicAuth(request: Request, response: Response) {
+interface Result {
+    code: string
+    value?: User
+}
 
+export async function basicAuth(request: Request) {
+    
     const userRepository = getCustomRepository(UserRepository)
 
     if (!request.headers.authorization || request.headers.authorization.indexOf('Basic ') == -1) {
 
-        return 'É necessário o Header de Autenticação.'
+        const result: Result = {code: 'É necessário o Header de Autenticação.'}
+
+        return result
     }
 
     const base64Credentials = request.headers.authorization.split(' ')[1]
@@ -17,10 +25,11 @@ export async function basicAuth(request: Request, response: Response) {
 
     const validation = await userRepository.findByEmailAndPassword(username, password)
     
-    if (validation == false) {
+    if (validation.code == 'E-mail e/ou senha incorretos.') {
 
-        return 'Este usuário não existe.'
-
+        const result: Result = {code: 'E-mail e/ou senha incorretos.'}
+        
+        return result 
     } 
 
     return validation

@@ -2,27 +2,36 @@ import { AbstractRepository, EntityRepository } from "typeorm";
 import { User } from "../entity/User";
 import * as bcrypt from 'bcrypt'
 
+interface Result {
+    code: string
+    value?: User
+}
 @EntityRepository(User)
 export class UserRepository extends AbstractRepository<User> {
 
     async findByEmailAndPassword(email: string, password: string) {
 
-        const user = await this.repository.find({where: {email: email}})
+        const user = await this.repository.findOne({where: {email: email}})
 
-        if (user[0] == null) {
+        if (user == null) {
 
-            return false
+            const result: Result = {code: 'E-mail e/ou senha incorretos.'} 
 
-        } else {
+            return result
+        } 
 
-            if (await bcrypt.compare(password, user[0].password)) {
-               
-                return user[0]
+        const userPassword = await bcrypt.compare(password, user.password)
 
-            } else {
-                
-                return false
-            }
-        }
+        if (!userPassword) {
+
+            const result: Result = {code: 'E-mail e/ou senha incorretos.'}
+
+            return result
+            
+        } 
+            
+        const result: Result = {code: 'Usuário encontrado', value: user}
+
+        return result
     }
 }
